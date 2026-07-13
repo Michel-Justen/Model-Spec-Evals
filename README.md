@@ -18,7 +18,8 @@ a chart.
 - `src/check_models.py` — confirm the model ids are reachable before spending
 - `src/analyze.py` — turn the `.eval` logs into a table, a CSV, and a bar chart
 - `methodology.md` — how the eval works and which settings match OpenAI's
-- `Adherence.png` — chart from an early 50-prompt pilot (illustrative, not a final result)
+- `findings.md` — early pilot results (preliminary, not final)
+- `Adherence.png` — chart from that pilot
 
 ## Running it
 
