@@ -1,0 +1,19 @@
+# Vendored OpenAI repos — cloned by setup.sh, not committed (keeps provenance clean).
+vendor/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Eval outputs — raw logs can be large; keep curated summaries under results/ explicitly.
+vendor/model_spec_evals/logs/
+results/*.eval
+results/raw/
+
+# Secrets
+.env
+*.key
+
+# OS
+.DS_Store

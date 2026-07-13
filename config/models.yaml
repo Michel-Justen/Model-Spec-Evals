@@ -1,0 +1,23 @@
+# Candidate models to score against the OpenAI Model Spec, plus run presets.
+# Check the ids are reachable with src/check_models.py before a real run.
+#
+# On "Thinking": OpenAI's published bars label "GPT-5.4 Thinking", but the API exposes
+# a single `gpt-5.4` id whose reasoning is set by the `reasoning_effort` parameter (not a
+# separate model). To reproduce their ~87% anchor we run gpt-5.4 at high reasoning effort.
+# Set that per-run in Inspect with:  --reasoning-effort high  (or -M reasoning_effort=high).
+
+grader: openai/gpt-5          # match OpenAI's published setup for comparability
+
+candidates:
+  # id (Inspect --model)     role
+  - openai/gpt-5.4           # fidelity anchor: OpenAI reports ~87% (Thinking); run at high effort
+  - openai/gpt-5.5           # un-reported target
+  - openai/gpt-5.6-sol       # un-reported target (5.6 flagship)
+  # also available if scope grows: openai/gpt-5.6-terra, openai/gpt-5.6-luna
+
+presets:
+  # epochs = candidate samples per prompt; grader_samples = grader draws per candidate sample (median taken)
+  smoke:      { epochs: 1,  grader_samples: 1, limit: 3   }   # plumbing test, ~pennies
+  pilot:      { epochs: 2,  grader_samples: 1, limit: 40  }   # measured cost calibration + directional signal
+  moderate:   { epochs: 5,  grader_samples: 3, limit: null }  # full 587, usable CIs, ~mid cost
+  blog:       { epochs: 20, grader_samples: 5, limit: null }  # exact OpenAI reproduction, most expensive
