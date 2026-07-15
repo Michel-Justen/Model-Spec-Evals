@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Turn Inspect .eval logs into a per-section adherence table, a summary CSV/JSON, and a
-bar chart. The chart needs matplotlib; the table and CSV don't.
+Parse Inspect .eval logs from Model Spec runs into (a) a per-section adherence table,
+(b) a summary CSV/JSON, and (c) a grouped bar chart reproducing OpenAI's published figure.
 
+    python src/analyze.py vendor/model_spec_evals/logs/*.eval
     python src/analyze.py --logs-dir vendor/model_spec_evals/logs
+
+Reads token usage too, so it doubles as the calibrator for cost_model.py.
+Chart requires matplotlib (optional); table/CSV work without it.
 """
 from __future__ import annotations
 
@@ -101,12 +105,63 @@ def make_chart(rows: list[dict], out: Path, title: str = "Model Spec adherence")
     print(f"wrote {out}")
 
 
+def pool_by_model(paths: list[str]) -> list[dict]:
+    """Pool sample-level scores across logs, grouped by model, so multiple epoch-batches
+    of the same model (e.g. 10 epochs now + 10 later) combine into one number.
+
+    The 95% CI is clustered by prompt: a prompt's repeated epochs are correlated, not
+    independent, so we take the SE across prompt-level means (n = #prompts), not across
+    all samples. That keeps the interval honest.
+    """
+    from collections import defaultdict
+
+    models: dict[str, dict] = defaultdict(
+        lambda: {"by_prompt": defaultdict(list), "by_sec": defaultdict(list),
+                 "n_logs": 0, "epochs": set()})
+    for p in paths:
+        log = read_eval_log(p)
+        m = models[str(log.eval.model)]
+        m["n_logs"] += 1
+        ep = getattr(log.eval.config, "epochs", None)
+        if ep:
+            m["epochs"].add(ep)
+        for s in (log.samples or []):
+            sc = s.scores.get("model_graded_spec_section_compliance") if s.scores else None
+            if sc is None or not isinstance(sc.value, (int, float)):
+                continue
+            v = float(sc.value)
+            m["by_prompt"][s.id].append(v)
+            sec = (s.metadata or {}).get("top_level_section")
+            if sec:
+                m["by_sec"][sec].append(v)
+
+    rows = []
+    for model, m in models.items():
+        all_vals = [v for vs in m["by_prompt"].values() for v in vs]
+        overall = sum(all_vals) / len(all_vals) if all_vals else None
+        prompt_means = [sum(vs) / len(vs) for vs in m["by_prompt"].values() if vs]
+        ci = None
+        if len(prompt_means) > 1:
+            mp = sum(prompt_means) / len(prompt_means)
+            var = sum((x - mp) ** 2 for x in prompt_means) / (len(prompt_means) - 1)
+            ci = 1.96 * (var / len(prompt_means)) ** 0.5
+        rows.append({
+            "model": model, "overall": overall,
+            "sections": {sec: sum(vs) / len(vs) for sec, vs in m["by_sec"].items() if vs},
+            "ci": ci, "n_prompts": len(m["by_prompt"]), "n_samples": len(all_vals),
+            "epochs": sorted(m["epochs"]), "usage": {}, "log": f"{m['n_logs']} log(s)",
+        })
+    return sorted(rows, key=lambda r: r["model"])
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("logs", nargs="*", help=".eval log files")
     ap.add_argument("--logs-dir", help="directory of .eval logs")
     ap.add_argument("--outdir", default=str(ROOT / "results"))
     ap.add_argument("--title", default="Model Spec adherence")
+    ap.add_argument("--pool", action="store_true",
+                    help="pool sample scores by model across logs (combine epoch batches, adds CIs)")
     args = ap.parse_args()
 
     paths = list(args.logs)
@@ -115,8 +170,13 @@ def main() -> None:
     if not paths:
         raise SystemExit("No .eval logs given. Pass files or --logs-dir.")
 
-    rows = [summarize(p) for p in paths]
+    rows = pool_by_model(paths) if args.pool else [summarize(p) for p in paths]
     print_table(rows)
+    for r in rows:
+        if r.get("ci") is not None:
+            ep = f"×{max(r['epochs'])} epochs" if r.get("epochs") else ""
+            print(f"  95% CI {r['model']}: {r['overall']*100:.1f}% ± {r['ci']*100:.1f} pts "
+                  f"(n={r['n_prompts']} prompts {ep}, clustered)")
     write_summary(rows, Path(args.outdir))
     make_chart(rows, Path(args.outdir) / "figures" / "adherence.png", title=args.title)
 

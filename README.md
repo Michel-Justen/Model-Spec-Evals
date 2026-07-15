@@ -1,38 +1,64 @@
-# Model Spec adherence
+# Model Spec compliance — independent replication
 
-Scripts to run OpenAI's Model Spec eval against models OpenAI hasn't published adherence
-scores for — GPT-5.5 and the GPT-5.6 family (Sol, Terra, Luna).
+An independent measurement of how well OpenAI's recent models follow OpenAI's own
+[Model Spec](https://github.com/openai/model_spec), using OpenAI's public eval
+[harness](https://github.com/openai/model_spec_evals) and 587-prompt
+[dataset](https://github.com/openai/model_spec_dataset) (both public domain), extended to the
+recent flagships OpenAI has **not** reported scores for.
 
-OpenAI open-sourced the eval harness and the 596-prompt dataset, but only reported scores
-through GPT-5.4 Thinking. This wraps their harness so you can point it at newer models,
-estimate what a run will cost before spending anything, and turn the logs into a table and
-a chart.
+**Headline:** compliance peaked at GPT-5 Thinking (Aug 2025) and dropped ~4.5 points to a plateau
+across the three following reasoning flagships. **GPT-5.5 Thinking** and **GPT-5.6 Sol** — neither
+reported by OpenAI, both first measured here — are each significantly below GPT-5 Thinking on
+OpenAI's own spec.
 
-## Layout
+| Model | Compliance (ours) | OpenAI published |
+|---|---|---|
+| GPT-5 Thinking | 90.0% | 89% |
+| GPT-5.4 Thinking | 85.5% | 87% |
+| GPT-5.5 Thinking | 85.7% | *unreported* |
+| GPT-5.6 Sol | 85.6% | *unreported* |
 
-- `setup.sh` — makes a Python env, clones OpenAI's harness + dataset, checks the dataset loads
-- `config/models.yaml` — which models to test, the grader, and the run presets
-- `config/prices.yaml` — token prices used by the cost estimate
-- `src/run_eval.py` — run the eval for a given model and preset
-- `src/cost_model.py` — estimate the dollar cost of a run before you start
-- `src/check_models.py` — confirm the model ids are reachable before spending
-- `src/analyze.py` — turn the `.eval` logs into a table, a CSV, and a bar chart
-- `methodology.md` — how the eval works and which settings match OpenAI's
-- `findings.md` — early pilot results (preliminary, not final)
-- `Adherence.png` — chart from that pilot
+👉 **Full write-up, tables, charts, and validation: [RESULTS.md](RESULTS.md).**
+**Method and settings: [methodology.md](methodology.md).**
 
-## Running it
+## Repo map
 
-```
+- **[RESULTS.md](RESULTS.md)** — headline, per-section/sub-section breakdown, failure-direction
+  analysis, validation, caveats, reproduce steps
+- **[methodology.md](methodology.md)** — exact settings, grader, sampling, validation reasoning
+- `results/` — the two charts, `summary.csv`, and `failure_directions.json` (per-prompt audit labels)
+- `src/` — the code:
+  - `run_eval.py` — run the eval (robustness flags: retry, fail-on-error, timeout, connections)
+  - `analyze.py` — logs → table + CSV + chart, with pooled clustered CIs (`--pool`)
+  - `compare.py` — **paired** significance test between two models on the shared prompts
+  - `make_chart.py` — the compliance charts (`--ours-only` and the OpenAI-context version)
+  - `drilldown.py` — where a model loses ground, by spec sub-section, with examples
+  - `failure_direction.py` — classifies failures as over- vs under-cautious
+  - `cost_model.py` — estimate $ before a run · `check_models.py` — pre-flight model reachability
+- `config/` — model ids, grader, presets, token prices
+- `setup.sh` — one command: Python env, clone OpenAI's harness + dataset, validate
+
+## Raw logs (full transcripts)
+
+The raw `.eval` logs (~2 GB — every prompt, model response, and grader rationale) are **not in git**;
+they're shared via Google Drive so the analysis layer can be re-run on our exact outputs without
+re-spending on the eval:
+
+> **Drive folder:** _[link to be added]_ — download into `runs/`, then run the analysis scripts (see
+> [RESULTS.md §8](RESULTS.md#8-reproduce-it)).
+
+This mirrors OpenAI's own posture (public harness + dataset + scores; transcripts not published).
+The dataset prompts themselves are public (CC0) in OpenAI's repo, keyed by ID.
+
+## Reproduce
+
+```bash
 ./setup.sh
 export OPENAI_API_KEY=...
 python src/check_models.py
-python src/run_eval.py --model openai/gpt-5.6-sol --preset moderate
-python src/analyze.py --logs-dir vendor/model_spec_evals/logs
+python src/run_eval.py --model openai/gpt-5.6-sol --preset moderate \
+    --epochs 5 --grader-samples 5 --reasoning-effort high --log-dir runs/sol
+python src/analyze.py runs/sol/*.eval --pool
 ```
 
-The grader re-reads the entire Model Spec on every call, so it drives almost all of the cost.
-Run `python src/cost_model.py` to see the breakdown before starting a big run.
-
-Built on OpenAI's [model_spec_evals](https://github.com/openai/model_spec_evals) and
-[model_spec_dataset](https://github.com/openai/model_spec_dataset), both public domain.
+Compute: ~$4,900 of API credits, funded by a BlueDot Rapid AI Safety Grant.

@@ -1,14 +1,21 @@
 #!/usr/bin/env python3
 """
-Estimate the dollar cost of a Model Spec eval run.
+Cost model for the OpenAI Model Spec adherence eval.
 
-Calibrated to the token counts OpenAI published in the model_spec_evals README for one
-full pass (587 prompts, 1 epoch, 1 grader sample): the grader used ~33.3M tokens, the
-candidate ~259K. The grader dominates because it re-reads the full ~50K-token Model Spec
-on every grading call, so cost scales with prompts * epochs * grader_samples.
+Calibrated to the REAL token counts OpenAI published in the model_spec_evals README
+for one full pass (587 runnable prompts, epochs=1, grader_samples=1):
 
-    python src/cost_model.py
+    candidate openai/gpt-4o-mini : 258,737 tokens  [in 49,788 | out 208,949]
+    grader    openai/gpt-5       : 33,338,551 tokens [in 32,778,942 | out 559,609 | reasoning 450,304]
+
+The grader dominates because it re-injects the full (~50K token) Model Spec into every
+grading call. Total grader calls = N_PROMPTS * epochs * grader_samples, so those two knobs
+are the entire budget dial.
+
+Usage:
+    python src/cost_model.py                 # scenario table for all presets
     python src/cost_model.py --epochs 5 --grader-samples 3
+    python src/cost_model.py --calibrate logs/<run>.eval   # recalibrate from a real run (TODO after pilot)
 """
 from __future__ import annotations
 
@@ -148,8 +155,8 @@ def main() -> None:
             ("moderate", 5, 3), ("blog(OpenAI)", 20, 5),
         ]
     print_scenarios(prices, scenarios)
-    print("\nPrices are placeholders — edit config/prices.yaml. The per-call token constants "
-          "come from OpenAI's published run; re-measure from your own logs to refine them.")
+    print("\n⚠️  Prices are placeholders — edit config/prices.yaml. Recalibrate token/call "
+          "constants from a real run once the pilot lands (see --calibrate, TODO).")
 
 
 if __name__ == "__main__":

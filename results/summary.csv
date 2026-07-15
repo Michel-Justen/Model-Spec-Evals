@@ -1,0 +1,6 @@
+model,reasoning_effort,epochs,grader_samples,overall_compliance,ci95_halfwidth,openai_published
+GPT-5 Thinking,high,5,5,0.900,0.006,0.89
+GPT-5.4 Thinking,high,5,5,0.855,0.006,0.87
+GPT-5.5 Thinking,high,5,5,0.857,0.005,unreported
+GPT-5.6 Sol,high,10,5,0.856,0.004,unreported
+GPT-5.4 (no reasoning; diagnostic),default,3,3,0.826,,n/a

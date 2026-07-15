@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-Launcher around `inspect eval` for the Model Spec suite.
+Thin launcher around `inspect eval` for the Model Spec suite.
 
-Reads config/models.yaml for the grader and presets so you don't have to remember the
--T flags, and prints the command before running (with --dry-run it prints without spending).
+Reads config/models.yaml for the grader + presets so runs are reproducible and
+you don't have to remember the -T flags. Prints the exact command before running
+(and with --dry-run, prints it WITHOUT spending anything).
 
-    python src/run_eval.py --model openai/gpt-5.4 --preset pilot
-    python src/run_eval.py --model openai/gpt-5.6-sol --preset moderate
-    python src/run_eval.py --model openai/gpt-5.4 --preset smoke --dry-run
+Examples:
+    python src/run_eval.py --model openai/gpt-4o-mini --preset smoke --dry-run
+    python src/run_eval.py --model openai/gpt-5-4-thinking --preset pilot
+    python src/run_eval.py --model openai/gpt-5-6-sol --preset moderate
 """
 from __future__ import annotations
 
@@ -25,7 +27,7 @@ CONFIG = yaml.safe_load((ROOT / "config" / "models.yaml").read_text())
 EVALS_DIR = ROOT / "vendor" / "model_spec_evals"
 DATASET_DIR = ROOT / "vendor" / "model_spec_dataset" / "dataset"
 TASK = "src/model_spec_evals/tasks.py"
-# use the inspect binary from this interpreter's env, so PATH doesn't matter
+# Use the `inspect` binary from THIS interpreter's env (PATH-independent).
 INSPECT = str(Path(sys.executable).parent / "inspect")
 
 
@@ -51,7 +53,8 @@ def stratified_ids(k: int, seed: int = 0) -> list[str]:
 
 
 def build_cmd(model, preset, epochs=None, grader_samples=None, limit=None,
-              stratify=None, reasoning_effort=None) -> list[str]:
+              stratify=None, reasoning_effort=None, log_dir=None, display="rich",
+              max_connections=30, retry_on_error=3, fail_on_error=0.05, timeout=600) -> list[str]:
     p = CONFIG["presets"][preset]
     epochs = epochs or p["epochs"]
     grader_samples = grader_samples if grader_samples is not None else p["grader_samples"]
@@ -61,12 +64,21 @@ def build_cmd(model, preset, epochs=None, grader_samples=None, limit=None,
     cmd = [
         INSPECT, "eval", TASK,
         "--model", model,
-        "--display", "rich",
+        "--display", display,
         "--epochs", str(epochs),
         "-T", f"dataset_dir={DATASET_DIR}",
         "-T", f"grader_model={grader}",
         "-T", f"num_grader_samples={grader_samples}",
+        # robustness: retry transient sample failures, abort if >5% error (biased dropouts),
+        # cap concurrency to stay under the grader's TPM, and time out hung requests so a
+        # stuck connection gets retried instead of stalling the whole run forever.
+        "--max-connections", str(max_connections),
+        "--retry-on-error", str(retry_on_error),
+        "--fail-on-error", str(fail_on_error),
+        "--timeout", str(timeout),
     ]
+    if log_dir:
+        cmd += ["--log-dir", str(log_dir)]
     if reasoning_effort:
         cmd += ["--reasoning-effort", reasoning_effort]
     if stratify:
@@ -87,11 +99,18 @@ def main() -> None:
     ap.add_argument("--limit", type=int, help="override preset prompt cap")
     ap.add_argument("--stratify", type=int, help="pick N prompts per spec section (balanced subset)")
     ap.add_argument("--reasoning-effort", help="candidate reasoning effort: minimal|low|medium|high")
+    ap.add_argument("--log-dir", help="where inspect writes .eval logs (default: inspect's logs/)")
+    ap.add_argument("--display", default="rich", help="rich | plain | log (plain for background runs)")
+    ap.add_argument("--max-connections", type=int, default=30)
+    ap.add_argument("--retry-on-error", type=int, default=3)
+    ap.add_argument("--fail-on-error", type=float, default=0.05)
+    ap.add_argument("--timeout", type=int, default=600, help="per-request timeout (s); prevents hangs")
     ap.add_argument("--dry-run", action="store_true", help="print the command, spend nothing")
     args = ap.parse_args()
 
     cmd = build_cmd(args.model, args.preset, args.epochs, args.grader_samples, args.limit,
-                    args.stratify, args.reasoning_effort)
+                    args.stratify, args.reasoning_effort, args.log_dir, args.display,
+                    args.max_connections, args.retry_on_error, args.fail_on_error, args.timeout)
     print("cd", EVALS_DIR)
     print(" ".join(cmd), "\n")
     if args.dry_run:

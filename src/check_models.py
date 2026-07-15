@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Confirm the candidate + grader model ids in config/models.yaml are reachable on your
-OpenAI account before spending on a full run. Checks each id against the models endpoint
-(free, no generation). Requires OPENAI_API_KEY.
+Pre-flight: confirm the candidate + grader model ids in config/models.yaml are actually
+reachable on your OpenAI account BEFORE spending on a full run. Sends one 1-token ping
+per model (costs ~nothing). Requires OPENAI_API_KEY.
 
     python src/check_models.py
 """
@@ -36,11 +36,11 @@ def main() -> None:
         api_id = full.split("/", 1)[1] if "/" in full else full
         try:
             client.models.retrieve(api_id)  # 404/permission error if not accessible
-            print(f"  ok       {full}")
+            print(f"  ✅ {full}")
             ok.append(full)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             msg = str(e).splitlines()[0][:120]
-            print(f"  MISSING  {full}  -  {msg}")
+            print(f"  ❌ {full}  —  {msg}")
             bad.append((full, msg))
     print(f"\nreachable: {len(ok)}/{len(ids)}")
     if bad:

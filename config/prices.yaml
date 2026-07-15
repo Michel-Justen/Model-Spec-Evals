@@ -1,7 +1,9 @@
 # Token prices in USD per 1,000,000 tokens.
-# Placeholder values — check against https://openai.com/api/pricing before relying on them.
-# The grader (gpt-5) dominates total cost, so its price matters most.
-# "cached_input" is the price for prompt-cache hits. Reasoning tokens bill at the output rate.
+# ⚠️ PLACEHOLDER VALUES — verify against https://openai.com/api/pricing before quoting in the grant.
+# The grader (gpt-5) dominates total cost, so its price is the one that matters most.
+# "cached_input" is the price for prompt-cache HITS (OpenAI auto-discounts a repeated prefix).
+#
+# Reasoning tokens are billed at the model's OUTPUT rate.
 
 grader:
   # Grader used for apples-to-apples comparison with OpenAI's published bars.

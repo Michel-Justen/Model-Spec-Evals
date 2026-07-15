@@ -1,15 +1,19 @@
-# Vendored OpenAI repos — cloned by setup.sh, not committed (keeps provenance clean).
+# Vendored OpenAI repos — cloned by setup.sh (keeps provenance clean)
 vendor/
+
+# Raw eval logs — ~2 GB of full transcripts; shared via Google Drive, not git (see README)
+runs/
+*.eval
+
+# Per-prompt drill extracts — contain full dataset prompt text + model responses,
+# including sensitive items. Regenerate from the Drive logs with src/drilldown.py.
+results/drill_*.json
+results/.estimate_cache.json
 
 # Python
 __pycache__/
 *.pyc
 .venv/
-
-# Eval outputs — raw logs can be large; keep curated summaries under results/ explicitly.
-vendor/model_spec_evals/logs/
-results/*.eval
-results/raw/
 
 # Secrets
 .env

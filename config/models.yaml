@@ -1,7 +1,7 @@
 # Candidate models to score against the OpenAI Model Spec, plus run presets.
-# Check the ids are reachable with src/check_models.py before a real run.
+# Model ids VERIFIED reachable on this account via src/check_models.py (2026-07-12).
 #
-# On "Thinking": OpenAI's published bars label "GPT-5.4 Thinking", but the API exposes
+# NOTE on "Thinking": OpenAI's published bars label "GPT-5.4 Thinking", but the API exposes
 # a single `gpt-5.4` id whose reasoning is set by the `reasoning_effort` parameter (not a
 # separate model). To reproduce their ~87% anchor we run gpt-5.4 at high reasoning effort.
 # Set that per-run in Inspect with:  --reasoning-effort high  (or -M reasoning_effort=high).
