@@ -44,7 +44,7 @@ The raw `.eval` logs (~2 GB — every prompt, model response, and grader rationa
 they're shared via Google Drive so the analysis layer can be re-run on our exact outputs without
 re-spending on the eval:
 
-> **Drive folder:** _[link to be added]_ — download into `runs/`, then run the analysis scripts (see
+> **Drive folder:** https://drive.google.com/drive/folders/12YmVY3f3-nq94FBv2jgeYa6BT0W_PtvB — download into `runs/`, then run the analysis scripts (see
 > [RESULTS.md §8](RESULTS.md#8-reproduce-it)).
 
 This mirrors OpenAI's own posture (public harness + dataset + scores; transcripts not published).
