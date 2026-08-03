@@ -30,7 +30,7 @@ AI) and dataset ([`model_spec_dataset`](https://github.com/openai/model_spec_dat
 | Choice | Value | Why |
 |---|---|---|
 | Grader model | `openai/gpt-5` | OpenAI's grader; changing it changes the yardstick |
-| Reasoning effort (candidates) | **high** | Best-case / charitable; compliance is effort-dependent (§Validation) |
+| Reasoning effort (candidates) | high | OpenAI does not disclose the effort it used. Note `high` is **not** the maximum — a higher `xhigh` setting exists and was not tested (see Validation). |
 | Candidate samples (`epochs`) | **5** (Sol: 10) | Enough for tight fixed-benchmark CIs (±0.4–0.6) |
 | Grader samples (median) | **5** | Matches OpenAI's grading; the comparability-critical knob |
 | Spec version | 2025-12-18 (pinned) | Same spec text OpenAI scored against |
@@ -43,7 +43,7 @@ estimate — it only narrows the error bar), so 5 suffices; `num_grader_samples`
 ## Two confidence intervals (they answer different questions)
 
 - **Fixed-benchmark CI** (sampling noise on this 587-prompt set) — comparable to OpenAI's tight
-  published bars; shrinks with `epochs`. Used on the charts. ~±0.4–0.6 here.
+  published bars; shrinks with `epochs`. ~±0.4–0.6 here.
 - **Prompt-clustered CI** (`analyze.py --pool`) — treats the 587 prompts as a sample from a larger
   population; wider (~±2), more conservative about generalizing beyond this benchmark.
 
@@ -52,17 +52,26 @@ which controls for prompt difficulty and is far more powerful than comparing two
 
 ## Validation
 
-We anchored against the two models OpenAI *did* report. GPT-5 Thinking reproduces well (90.0% vs
-89%); GPT-5.4 is 1.5 pts low (85.5% vs 87%). The anchors miss in opposite directions, so this is
-**reproduction scatter of ~±1.5 pts, not a systematic bias** — the harness reproduces OpenAI's
-published figures to within ~1.5 pts, not exactly. Two diagnostics on the 5.4 gap:
+We anchored against the two models OpenAI *did* report. Our GPT-5 Thinking is +1.0 pt vs OpenAI's
+published figure (90.0% vs 89%); our GPT-5.4 is −1.5 pts (85.5% vs 87%). The harness reproduces
+OpenAI's published numbers to within ~1.5 points, not exactly.
 
-- **Version drift — ruled out.** Only one GPT-5.4 checkpoint exists; the alias points to it.
-- **Reasoning effort — not the cause, but it matters.** GPT-5.4 at *no* reasoning = 82.6% vs 85.5%
-  at high, so more reasoning → more compliance and we already use the max. See [RESULTS.md §3](RESULTS.md#3-validation--read-this-before-trusting-the-absolute-numbers).
+We have **not** fully explained the −1.5 GPT-5.4 gap. What we can and cannot say:
 
-Because the GPT-5.5 / Sol comparisons are internal, same-methodology, and paired against GPT-5
-Thinking (which we reproduce), their **direction and significance are robust** to this scatter.
+- **A newer *public* checkpoint is not the cause.** Only one public GPT-5.4 checkpoint exists
+  (`gpt-5.4-2026-03-05`), and the `gpt-5.4` alias points to it. We **cannot** rule out that OpenAI
+  evaluated an internal or pre-release checkpoint that differs from the public one.
+- **Reasoning effort could account for it.** OpenAI does not disclose the effort it used, and we ran
+  at `high`, which is **not** the maximum — a higher `xhigh` setting exists that we did not test.
+  Compliance rises with reasoning (GPT-5.4 scored 82.6% with reasoning off vs 85.5% at `high`, a
+  within-model diagnostic on lighter sampling), so a higher effort could raise the numbers — but we
+  did not test whether `xhigh` closes the gap.
+- Minor grader / spec-version / sampling differences may also contribute.
+
+So the leading candidates are an undisclosed higher reasoning effort and/or an internal checkpoint;
+we did not determine which. The between-model comparisons in the results are internal (same harness,
+same settings, paired), so their **direction** does not depend on resolving this absolute-calibration
+gap; the exact **magnitudes** could shift if a different effort setting were used.
 
 ## Limitations
 
@@ -71,6 +80,11 @@ Thinking (which we reproduce), their **direction and significance are robust** t
   not systematic bias.
 - Absolute scores reproduce OpenAI's to ~±1.5 pts, not exactly; we lead with paired model-to-model
   comparisons.
+- All runs use `high` reasoning effort; a higher setting (`xhigh`) exists and was not tested, and
+  OpenAI did not disclose its effort — so our absolute numbers may not be directly comparable to
+  theirs.
+- Any over/under-caution labels in the results are exploratory `gpt-4o-mini` classifications that
+  were not hand-verified.
 
 ## Exact commands
 
@@ -81,6 +95,6 @@ python src/check_models.py
 python src/run_eval.py --model openai/gpt-5.6-sol --preset moderate \
     --epochs 5 --grader-samples 5 --reasoning-effort high --log-dir runs/sol
 python src/analyze.py runs/sol/*.eval --pool
-python src/compare.py --a runs/anchor-gpt5-thinking runs/anchor-topup --b runs/sol runs/sol-topup \
+python src/compare.py --a runs/anchor-gpt5-thinking --b runs/sol \
     --labels "GPT-5 Thinking" "GPT-5.6 Sol"
 ```

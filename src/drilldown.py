@@ -20,8 +20,8 @@ from inspect_ai.log import read_eval_log
 ROOT = Path(__file__).resolve().parent.parent
 SCORER = "model_graded_spec_section_compliance"
 MODELS = {
-    "sol": ["runs/sol", "runs/sol-topup"],
-    "gpt5-thinking": ["runs/anchor-gpt5-thinking", "runs/anchor-topup"],
+    "sol": ["runs/sol"],
+    "gpt5-thinking": ["runs/anchor-gpt5-thinking"],
 }
 
 

@@ -35,8 +35,8 @@ MUTED = "#6b6b6b"
 
 # Models we have measured on our own methodology: key -> (label, date, log dirs)
 MEASURED = {
-    "gpt5-thinking": ("GPT-5 Thinking", "Aug 2025", ["runs/anchor-gpt5-thinking", "runs/anchor-topup"]),
-    "sol": ("GPT-5.6 Sol", "Jul 2026", ["runs/sol", "runs/sol-topup"]),
+    "gpt5-thinking": ("GPT-5 Thinking", "Aug 2025", ["runs/anchor-gpt5-thinking"]),
+    "sol": ("GPT-5.6 Sol", "Jul 2026", ["runs/sol"]),
     "gpt5.5": ("GPT-5.5 Thinking", "Apr 2026", ["runs/gpt55"]),
     # add as measured, e.g.:
     "gpt5.4": ("GPT-5.4 Thinking", "Mar 2026", ["runs/gpt54"]),

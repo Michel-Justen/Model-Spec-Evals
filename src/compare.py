@@ -7,8 +7,7 @@ compliance rate controls for prompt difficulty and is much more powerful than co
 two independent confidence intervals. Reports each model's rate and the paired gap with
 a 95% CI and p-value.
 
-    python src/compare.py --a runs/anchor-gpt5-thinking runs/anchor-topup \
-                          --b runs/sol runs/sol-topup \
+    python src/compare.py --a runs/anchor-gpt5-thinking --b runs/sol \
                           --labels "GPT-5 Thinking" "GPT-5.6 Sol"
 
 Each --a / --b entry is a .eval file or a directory of them.

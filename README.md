@@ -6,10 +6,11 @@ An independent measurement of how well OpenAI's recent models follow OpenAI's ow
 [dataset](https://github.com/openai/model_spec_dataset) (both public domain), extended to the
 recent flagships OpenAI has **not** reported scores for.
 
-**Headline:** compliance peaked at GPT-5 Thinking (Aug 2025) and dropped ~4.5 points to a plateau
-across the three following reasoning flagships. **GPT-5.5 Thinking** and **GPT-5.6 Sol** — neither
-reported by OpenAI, both first measured here — are each significantly below GPT-5 Thinking on
-OpenAI's own spec.
+**Summary:** in this replication, GPT-5 Thinking scores highest; GPT-5.4, GPT-5.5, and GPT-5.6 Sol
+all sit near 85–86%. The two models OpenAI has not reported — **GPT-5.5 Thinking** and **GPT-5.6
+Sol** — score below GPT-5 Thinking on OpenAI's own spec (paired test, p ≈ 0.0001) and are
+statistically indistinguishable from GPT-5.4 and from each other. Absolute numbers reproduce
+OpenAI's published figures to within ~1.5 points (see [methodology.md](methodology.md)).
 
 | Model | Compliance (ours) | OpenAI published |
 |---|---|---|
@@ -18,15 +19,15 @@ OpenAI's own spec.
 | GPT-5.5 Thinking | 85.7% | *unreported* |
 | GPT-5.6 Sol | 85.6% | *unreported* |
 
-👉 **Full write-up, tables, charts, and validation: [RESULTS.md](RESULTS.md).**
-**Method and settings: [methodology.md](methodology.md).**
+👉 **Full results and comparisons: [RESULTS.md](RESULTS.md).**
+**Method, settings, and validation: [methodology.md](methodology.md).**
 
 ## Repo map
 
-- **[RESULTS.md](RESULTS.md)** — headline, per-section/sub-section breakdown, failure-direction
-  analysis, validation, caveats, reproduce steps
-- **[methodology.md](methodology.md)** — exact settings, grader, sampling, validation reasoning
-- `results/` — the two charts, `summary.csv`, and `failure_directions.json` (per-prompt audit labels)
+- **[RESULTS.md](RESULTS.md)** — the raw numbers: overall scores, paired comparisons, and
+  per-section / sub-section breakdowns, plus reproduce steps
+- **[methodology.md](methodology.md)** — exact settings, grader, sampling, and validation reasoning
+- `results/` — `summary.csv` and `failure_directions.json` (per-prompt audit labels)
 - `src/` — the code:
   - `run_eval.py` — run the eval (robustness flags: retry, fail-on-error, timeout, connections)
   - `analyze.py` — logs → table + CSV + chart, with pooled clustered CIs (`--pool`)
@@ -44,8 +45,9 @@ The raw `.eval` logs (~2 GB — every prompt, model response, and grader rationa
 they're shared via Google Drive so the analysis layer can be re-run on our exact outputs without
 re-spending on the eval:
 
-> **Drive folder:** https://drive.google.com/drive/folders/12YmVY3f3-nq94FBv2jgeYa6BT0W_PtvB — download into `runs/`, then run the analysis scripts (see
-> [RESULTS.md §8](RESULTS.md#8-reproduce-it)).
+> **Drive folder:** https://drive.google.com/drive/folders/12YmVY3f3-nq94FBv2jgeYa6BT0W_PtvB — one
+> folder per model; download into `runs/`, then run the analysis scripts (see
+> [RESULTS.md](RESULTS.md#reproduce)).
 
 This mirrors OpenAI's own posture (public harness + dataset + scores; transcripts not published).
 The dataset prompts themselves are public (CC0) in OpenAI's repo, keyed by ID.
