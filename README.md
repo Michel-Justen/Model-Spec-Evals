@@ -45,8 +45,7 @@ The raw `.eval` logs (~2 GB — every prompt, model response, and grader rationa
 they're shared via Google Drive so the analysis layer can be re-run on our exact outputs without
 re-spending on the eval:
 
-> **Drive folder:** https://drive.google.com/drive/folders/12YmVY3f3-nq94FBv2jgeYa6BT0W_PtvB — one
-> folder per model; download into `runs/`, then run the analysis scripts (see
+> **Drive folder:** https://drive.google.com/drive/folders/10wNGfqbNJBCQT1WdMUM8jtcIC-vaboFn; download into `runs/`, then run the analysis scripts (see
 > [RESULTS.md](RESULTS.md#reproduce)).
 
 This mirrors OpenAI's own posture (public harness + dataset + scores; transcripts not published).
@@ -63,4 +62,4 @@ python src/run_eval.py --model openai/gpt-5.6-sol --preset moderate \
 python src/analyze.py runs/sol/*.eval --pool
 ```
 
-Compute: ~$4,900 of API credits, funded by a BlueDot Rapid AI Safety Grant.
+Compute: ~$5,500 of API credits. Gratefully supported by a [BlueDot Impact Rapid Grant](https://bluedot.org/programs/rapid-grants).
