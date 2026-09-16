@@ -98,3 +98,45 @@ python src/analyze.py runs/sol/*.eval --pool
 python src/compare.py --a runs/anchor-gpt5-thinking --b runs/sol \
     --labels "GPT-5 Thinking" "GPT-5.6 Sol"
 ```
+
+
+## GPT-6 Astra specifics
+
+Astra was measured on exactly the settings above (`high` effort, `gpt-5` grader, 5 gradings per answer,
+5 epochs), with four differences worth recording:
+
+- **Harness version.** inspect-ai below 0.3.263 detects reasoning models by testing whether `gpt-5` is
+  in the model name, so `gpt-6-astra` was routed through the Chat Completions API with no reasoning
+  parameters at all, silently running at the API default effort. A pilot run made this mistake and was
+  discarded. Astra requires inspect-ai >= 0.3.263 (which needs openai >= 3.1).
+- **Verification, not assumption.** Because of that bug, effort is verified from the logged request
+  payloads rather than the run header, which only records the requested config
+  (`src/verify_requests.py`): Responses API, `reasoning.effort=high`, `reasoning.summary=detailed`,
+  effort echoed back as `high`, and a grader input identical in shape to the other models'. Answers the
+  API filter blocked appear as an error object with no `output`; the harness records them with
+  stop_reason `content_filter` and the grader scores the boilerplate.
+- **Two batches, pooled.** Astra ran as 3 epochs (2026-09-11) plus 2 epochs (2026-09-15), pooled per
+  prompt. Paired per prompt, the later batch scored 0.09 points *lower* (95% CI -1.27 to +1.09,
+  p=0.89), so there is no evidence the served model changed between runs. Answers whose prompts the
+  biosecurity filter blocked error out and are never scored, which is why Astra's figures cover 584 of
+  the 587 prompts.
+- **Reasoning summaries.** Runs used `--reasoning-summary detailed`. OpenAI never returns raw chain of
+  thought; the API returns a summary written by a separate model, and only 65% of Astra's answers got
+  one at all. This limits every claim about what Astra was or was not "thinking".
+
+Confidence intervals throughout are computed from the Bessel-corrected per-prompt variance
+(`src/analyze_scores.py`), giving fixed-benchmark half-widths of +/-0.4 to +/-0.7 points.
+
+### Two extra checks that apply only to Astra
+
+The public dataset (released 2026-03-24, no canary string) predates Astra's 2026-04-30 knowledge
+cutoff, and OpenAI reports Astra is more evaluation-aware than earlier models. Both were tested:
+
+- **Contamination** (`src/contamination_probes.py`): rubric reconstruction and verbatim completion,
+  against GPT-5.6 Sol and GPT-5 as pre-release-cutoff comparisons, with freshly written control
+  prompts. Null result; see [results/contamination_verdict.md](results/contamination_verdict.md) for
+  the pre-registered decision rules and the sensitivity limits.
+- **Evaluation awareness** (`src/eval_awareness_judge.py`): a `gpt-5.4` judge over every answer and
+  reasoning summary, validated blind on 30 planted positives and 10 decoys. Null result; see
+  [docs/EVAL_AWARENESS_SEARCH_METHODS.md](docs/EVAL_AWARENESS_SEARCH_METHODS.md), which states plainly
+  what a null on OpenAI's summaries can and cannot support.
